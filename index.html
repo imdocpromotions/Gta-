@@ -63,6 +63,7 @@
     font-size: 22px;
     letter-spacing: 4px;
     color: #ccc;
+    cursor: pointer;
   }
   .live-badge {
     display: inline-block;
@@ -139,10 +140,41 @@
     padding: 10px 16px;
     border-radius: 10px;
     text-align: center;
-    min-width: 140px;
+    min-width: 160px;
   }
   .weapon-name { font-size: 16px; font-weight: bold; }
   .weapon-ammo { font-size: 14px; color: #aaa; margin-top: 2px; }
+
+  /* Control Panel */
+  .controls {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0,0,0,0.9);
+    padding: 20px;
+    border-radius: 12px;
+    z-index: 100;
+    display: none;
+    flex-direction: column;
+    gap: 12px;
+    min-width: 320px;
+    border: 1px solid #333;
+  }
+  .controls.show { display: flex; }
+  .controls h3 { margin-bottom: 4px; font-size: 18px; }
+  button {
+    background: #333;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+  }
+  button:hover { background: #555; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; }
+  label { font-size: 13px; color: #ccc; }
 </style>
 </head>
 <body>
@@ -153,17 +185,17 @@
     </div>
     <div class="bar-container stamina">
       <div class="icon">⚡</div>
-      <div class="bar-bg"><div class="bar-fill" id="stamina-fill" style="width:100%"></div></div>
+      <div class="bar-bg"><div class="bar-fill" id="stamina-fill"></div></div>
     </div>
     <div class="bar-container focus">
       <div class="icon">👁️</div>
-      <div class="bar-bg"><div class="bar-fill" id="focus-fill" style="width:100%"></div></div>
+      <div class="bar-bg"><div class="bar-fill" id="focus-fill"></div></div>
     </div>
   </div>
 
   <div class="top-right">
     <div class="money" id="money">$1,250</div>
-    <div class="stars">☆☆☆☆☆☆</div>
+    <div class="stars" id="stars">☆☆☆☆☆☆</div>
     <div class="live-badge">● LIVE</div>
   </div>
 
@@ -178,33 +210,106 @@
   <div class="mission">Current Mission: IRL Stream</div>
 
   <div class="weapon">
-    <div class="weapon-name" id="weapon-name">Unarmed</div>
+    <div class="weapon-name" id="weapon-name">Fists</div>
     <div class="weapon-ammo" id="weapon-ammo">—</div>
+  </div>
+
+  <!-- Control Panel (press C) -->
+  <div class="controls" id="controls">
+    <h3>Streamer Controls</h3>
+    <div>
+      <strong>Cash</strong>
+      <div class="row">
+        <button onclick="adjustCash(-1000)">-1000</button>
+        <button onclick="adjustCash(-100)">-100</button>
+        <button onclick="adjustCash(100)">+100</button>
+        <button onclick="adjustCash(1000)">+1000</button>
+      </div>
+    </div>
+    <div>
+      <strong>Weapon</strong>
+      <div class="row">
+        <button onclick="cycleWeapon(-1)">← Prev</button>
+        <button onclick="cycleWeapon(1)">Next →</button>
+      </div>
+    </div>
+    <div>
+      <label>Stamina: <span id="stamina-val">100</span></label>
+      <div class="row">
+        <button onclick="setStamina(stamina - 15)">-15</button>
+        <button onclick="setStamina(stamina + 20)">+20</button>
+        <button onclick="setStamina(100)">Full</button>
+      </div>
+    </div>
+    <div>
+      <label>Focus: <span id="focus-val">100</span></label>
+      <div class="row">
+        <button onclick="setFocus(focus - 15)">-15</button>
+        <button onclick="setFocus(focus + 20)">+20</button>
+        <button onclick="setFocus(100)">Full</button>
+      </div>
+    </div>
+    <div>
+      <strong>Wanted Stars</strong>
+      <div class="row">
+        <button onclick="setWanted(wanted - 1)">-</button>
+        <button onclick="setWanted(wanted + 1)">+</button>
+        <button onclick="setWanted(0)">Clear</button>
+      </div>
+    </div>
+    <button onclick="toggleControls()" style="margin-top:8px;">Close (C)</button>
   </div>
 
 <script>
   let cash = 1250;
   let health = 100;
+  let stamina = 100;
+  let focus = 100;
+  let wanted = 0;
   let weaponIndex = 0;
+
   const weapons = [
-    { name: "Unarmed", ammo: "—" },
-    { name: "Pistol", ammo: "12 / 60" },
-    { name: "SMG", ammo: "30 / 120" },
-    { name: "Rifle", ammo: "30 / 90" },
+    { name: "Fists", ammo: "—" },
+    { name: "Knife", ammo: "—" },
+    { name: "Glock", ammo: "17 / 68" },
+    { name: "Highpoint", ammo: "8 / 24" },
+    { name: "Draco", ammo: "30 / 90" },
     { name: "Phone", ammo: "Streaming" }
   ];
 
   function updateMoney() {
     document.getElementById('money').textContent = '$' + cash.toLocaleString();
   }
+
   function adjustCash(amount) {
     cash = Math.max(0, cash + amount);
     updateMoney();
   }
+
   function setHealth(percent) {
     health = Math.max(0, Math.min(100, percent));
     document.getElementById('health-fill').style.width = health + '%';
   }
+
+  function setStamina(percent) {
+    stamina = Math.max(0, Math.min(100, percent));
+    document.getElementById('stamina-fill').style.width = stamina + '%';
+    document.getElementById('stamina-val').textContent = Math.round(stamina);
+  }
+
+  function setFocus(percent) {
+    focus = Math.max(0, Math.min(100, percent));
+    document.getElementById('focus-fill').style.width = focus + '%';
+    document.getElementById('focus-val').textContent = Math.round(focus);
+  }
+
+  function setWanted(level) {
+    wanted = Math.max(0, Math.min(6, level));
+    const filled = '★'.repeat(wanted);
+    const empty = '☆'.repeat(6 - wanted);
+    document.getElementById('stars').textContent = filled + empty;
+  }
+
   function cycleWeapon(dir) {
     weaponIndex = (weaponIndex + dir + weapons.length) % weapons.length;
     const w = weapons[weaponIndex];
@@ -212,13 +317,24 @@
     document.getElementById('weapon-ammo').textContent = w.ammo;
   }
 
+  function toggleControls() {
+    document.getElementById('controls').classList.toggle('show');
+  }
+
+  // Keyboard shortcuts
   document.addEventListener('keydown', (e) => {
+    if (e.key === 'c' || e.key === 'C') toggleControls();
     if (e.key === 'ArrowRight') cycleWeapon(1);
     if (e.key === 'ArrowLeft') cycleWeapon(-1);
     if (e.key === '+') adjustCash(100);
     if (e.key === '-') adjustCash(-100);
+    if (e.key === 's') setStamina(stamina - 10);
+    if (e.key === 'S') setStamina(stamina + 10);
+    if (e.key === 'f') setFocus(focus - 10);
+    if (e.key === 'F') setFocus(focus + 10);
   });
 
+  // Battery attempt
   async function initBattery() {
     if ('getBattery' in navigator) {
       try {
@@ -230,8 +346,17 @@
     }
   }
 
+  // Slow stamina drain while streaming
+  setInterval(() => {
+    if (stamina > 15) setStamina(stamina - 0.3);
+  }, 2500);
+
+  // Init
   updateMoney();
   setHealth(100);
+  setStamina(100);
+  setFocus(100);
+  setWanted(0);
   initBattery();
 </script>
 </body>
