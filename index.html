@@ -145,7 +145,6 @@
   .weapon-name { font-size: 16px; font-weight: bold; }
   .weapon-ammo { font-size: 14px; color: #aaa; margin-top: 2px; }
 
-  /* Control Panel */
   .controls {
     position: absolute;
     top: 50%;
@@ -210,11 +209,10 @@
   <div class="mission">Current Mission: IRL Stream</div>
 
   <div class="weapon">
-    <div class="weapon-name" id="weapon-name">Fists</div>
-    <div class="weapon-ammo" id="weapon-ammo">—</div>
+    <div class="weapon-name" id="weapon-name"></div>
+    <div class="weapon-ammo" id="weapon-ammo"></div>
   </div>
 
-  <!-- Control Panel (press C) -->
   <div class="controls" id="controls">
     <h3>Streamer Controls</h3>
     <div>
@@ -269,12 +267,12 @@
   let weaponIndex = 0;
 
   const weapons = [
-    { name: "Fists", ammo: "—" },
-    { name: "Knife", ammo: "—" },
-    { name: "Glock", ammo: "17 / 68" },
-    { name: "Highpoint", ammo: "8 / 24" },
-    { name: "Draco", ammo: "30 / 90" },
-    { name: "Phone", ammo: "Streaming" }
+    { name: "Fists", ammo: "—", icon: "👊" },
+    { name: "Knife", ammo: "—", icon: "🔪" },
+    { name: "Glock", ammo: "17 / 68", icon: "🔫" },
+    { name: "Highpoint", ammo: "8 / 24", icon: "🔫" },
+    { name: "Draco", ammo: "30 / 90", icon: "🔫" },
+    { name: "Phone", ammo: "Streaming", icon: "📱" }
   ];
 
   function updateMoney() {
@@ -312,16 +310,27 @@
 
   function cycleWeapon(dir) {
     weaponIndex = (weaponIndex + dir + weapons.length) % weapons.length;
+    updateWeaponDisplay();
+  }
+
+  function updateWeaponDisplay() {
     const w = weapons[weaponIndex];
-    document.getElementById('weapon-name').textContent = w.name;
-    document.getElementById('weapon-ammo').textContent = w.ammo;
+    const nameEl = document.getElementById('weapon-name');
+    const ammoEl = document.getElementById('weapon-ammo');
+
+    if (w.name === "Fists") {
+      nameEl.innerHTML = `<span style="font-size:36px;">${w.icon}</span>`;
+      ammoEl.textContent = "";
+    } else {
+      nameEl.innerHTML = w.name;
+      ammoEl.textContent = w.ammo;
+    }
   }
 
   function toggleControls() {
     document.getElementById('controls').classList.toggle('show');
   }
 
-  // Keyboard shortcuts
   document.addEventListener('keydown', (e) => {
     if (e.key === 'c' || e.key === 'C') toggleControls();
     if (e.key === 'ArrowRight') cycleWeapon(1);
@@ -334,7 +343,6 @@
     if (e.key === 'F') setFocus(focus + 10);
   });
 
-  // Battery attempt
   async function initBattery() {
     if ('getBattery' in navigator) {
       try {
@@ -346,17 +354,16 @@
     }
   }
 
-  // Slow stamina drain while streaming
   setInterval(() => {
     if (stamina > 15) setStamina(stamina - 0.3);
   }, 2500);
 
-  // Init
   updateMoney();
   setHealth(100);
   setStamina(100);
   setFocus(100);
   setWanted(0);
+  updateWeaponDisplay();
   initBattery();
 </script>
 </body>
