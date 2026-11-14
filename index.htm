@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GTA 6 IRL Overlay</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: transparent;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    overflow: hidden;
+    width: 1920px;
+    height: 1080px;
+    color: white;
+  }
+  .status-bars {
+    position: absolute;
+    top: 30px;
+    left: 30px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .bar-container {
+    display: flex;
+    align-items: center;
+    background: rgba(0,0,0,0.7);
+    border-radius: 8px;
+    padding: 6px 10px;
+    width: 220px;
+  }
+  .icon { font-size: 18px; margin-right: 10px; width: 24px; text-align: center; }
+  .bar-bg {
+    flex: 1;
+    height: 10px;
+    background: #222;
+    border-radius: 5px;
+    overflow: hidden;
+  }
+  .bar-fill {
+    height: 100%;
+    width: 100%;
+    transition: width 0.4s ease;
+  }
+  .health .bar-fill { background: linear-gradient(90deg, #ff4d6d, #ff7aa2); }
+  .stamina .bar-fill { background: linear-gradient(90deg, #00e5c7, #5fffe0); }
+  .focus .bar-fill { background: linear-gradient(90deg, #a855f7, #c084fc); }
+  .top-right {
+    position: absolute;
+    top: 30px;
+    right: 30px;
+    text-align: right;
+  }
+  .money {
+    font-size: 32px;
+    font-weight: bold;
+    color: #4ade80;
+    text-shadow: 0 0 8px rgba(0,0,0,0.8);
+  }
+  .stars {
+    margin: 6px 0;
+    font-size: 22px;
+    letter-spacing: 4px;
+    color: #ccc;
+  }
+  .live-badge {
+    display: inline-block;
+    background: #e11d48;
+    color: white;
+    font-weight: bold;
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-size: 16px;
+    margin-top: 4px;
+  }
+  .minimap-wrap {
+    position: absolute;
+    bottom: 40px;
+    left: 40px;
+  }
+  .minimap {
+    width: 160px;
+    height: 160px;
+    border-radius: 50%;
+    background: #1a1a2e;
+    border: 4px solid rgba(255,255,255,0.15);
+    position: relative;
+    box-shadow: 0 0 15px rgba(0,0,0,0.6);
+  }
+  .arrow {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 28px;
+    color: white;
+    text-shadow: 0 0 4px black;
+  }
+  .north {
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #000;
+    color: white;
+    font-size: 12px;
+    font-weight: bold;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .location {
+    margin-top: 8px;
+    font-size: 14px;
+    text-align: center;
+    text-shadow: 0 1px 3px black;
+  }
+  .mission {
+    position: absolute;
+    bottom: 50px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 22px;
+    font-weight: bold;
+    text-shadow: 0 2px 6px black;
+    background: rgba(0,0,0,0.4);
+    padding: 6px 20px;
+    border-radius: 8px;
+  }
+  .weapon {
+    position: absolute;
+    bottom: 40px;
+    right: 40px;
+    background: rgba(0,0,0,0.65);
+    padding: 10px 16px;
+    border-radius: 10px;
+    text-align: center;
+    min-width: 140px;
+  }
+  .weapon-name { font-size: 16px; font-weight: bold; }
+  .weapon-ammo { font-size: 14px; color: #aaa; margin-top: 2px; }
+</style>
+</head>
+<body>
+  <div class="status-bars">
+    <div class="bar-container health">
+      <div class="icon">❤️</div>
+      <div class="bar-bg"><div class="bar-fill" id="health-fill"></div></div>
+    </div>
+    <div class="bar-container stamina">
+      <div class="icon">⚡</div>
+      <div class="bar-bg"><div class="bar-fill" id="stamina-fill" style="width:100%"></div></div>
+    </div>
+    <div class="bar-container focus">
+      <div class="icon">👁️</div>
+      <div class="bar-bg"><div class="bar-fill" id="focus-fill" style="width:100%"></div></div>
+    </div>
+  </div>
+
+  <div class="top-right">
+    <div class="money" id="money">$1,250</div>
+    <div class="stars">☆☆☆☆☆☆</div>
+    <div class="live-badge">● LIVE</div>
+  </div>
+
+  <div class="minimap-wrap">
+    <div class="minimap">
+      <div class="north">N</div>
+      <div class="arrow">▲</div>
+    </div>
+    <div class="location">Lenexa, KS</div>
+  </div>
+
+  <div class="mission">Current Mission: IRL Stream</div>
+
+  <div class="weapon">
+    <div class="weapon-name" id="weapon-name">Unarmed</div>
+    <div class="weapon-ammo" id="weapon-ammo">—</div>
+  </div>
+
+<script>
+  let cash = 1250;
+  let health = 100;
+  let weaponIndex = 0;
+  const weapons = [
+    { name: "Unarmed", ammo: "—" },
+    { name: "Pistol", ammo: "12 / 60" },
+    { name: "SMG", ammo: "30 / 120" },
+    { name: "Rifle", ammo: "30 / 90" },
+    { name: "Phone", ammo: "Streaming" }
+  ];
+
+  function updateMoney() {
+    document.getElementById('money').textContent = '$' + cash.toLocaleString();
+  }
+  function adjustCash(amount) {
+    cash = Math.max(0, cash + amount);
+    updateMoney();
+  }
+  function setHealth(percent) {
+    health = Math.max(0, Math.min(100, percent));
+    document.getElementById('health-fill').style.width = health + '%';
+  }
+  function cycleWeapon(dir) {
+    weaponIndex = (weaponIndex + dir + weapons.length) % weapons.length;
+    const w = weapons[weaponIndex];
+    document.getElementById('weapon-name').textContent = w.name;
+    document.getElementById('weapon-ammo').textContent = w.ammo;
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight') cycleWeapon(1);
+    if (e.key === 'ArrowLeft') cycleWeapon(-1);
+    if (e.key === '+') adjustCash(100);
+    if (e.key === '-') adjustCash(-100);
+  });
+
+  async function initBattery() {
+    if ('getBattery' in navigator) {
+      try {
+        const battery = await navigator.getBattery();
+        const update = () => setHealth(Math.round(battery.level * 100));
+        update();
+        battery.addEventListener('levelchange', update);
+      } catch (e) {}
+    }
+  }
+
+  updateMoney();
+  setHealth(100);
+  initBattery();
+</script>
+</body>
+</html>
